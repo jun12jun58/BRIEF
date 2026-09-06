@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BRIEF — 오늘의 뉴스</title>
+  <meta name="description" content="Free News API를 이용해 전 세계 최신 뉴스를 검색하고 살펴보는 사이트">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div class="brand-controls">
+        <a href="./" class="wordmark" aria-label="BRIEF 홈으로">BRIEF</a>
+        <nav class="language-switcher" aria-label="뉴스 언어 선택">
+          <button type="button" class="language-switch-button is-active" data-language="ko" aria-pressed="true">한국어
+            뉴스</button>
+          <button type="button" class="language-switch-button" data-language="en" aria-pressed="false">영어 뉴스</button>
+        </nav>
+      </div>
+
+      <form id="search-form" class="search-form" role="search">
+        <label for="search-input" class="sr-only">뉴스 키워드 검색</label>
+        <input type="search" id="search-input" class="search-input" placeholder="뉴스 키워드 검색" autocomplete="off"
+          maxlength="200">
+        <button type="submit" class="search-submit" aria-label="검색">검색</button>
+        <button type="button" id="reset-button" class="reset-button" hidden>검색 취소</button>
+      </form>
+    </div>
+  </header>
+
+  <main class="page">
+    <p id="status-bar" class="status-bar" role="status" aria-live="polite"></p>
+
+    <section id="state-empty" class="state-panel" hidden>
+      <p id="empty-message">검색 결과가 없습니다.</p>
+      <p class="state-hint">다른 키워드로 다시 검색해 보세요.</p>
+    </section>
+
+    <section id="korean-news-section" class="language-section" aria-labelledby="korean-news-heading">
+      <h1 id="korean-news-heading" class="language-heading">한국어 뉴스</h1>
+      <div id="korean-news-loading" class="language-loading" hidden>
+        <div class="spinner" aria-hidden="true"></div>
+        <p>뉴스를 불러오는 중입니다…</p>
+      </div>
+      <div id="korean-news-error" class="language-error" hidden>
+        <p>뉴스를 불러오지 못했습니다.</p>
+        <button type="button" class="retry-button">다시 시도</button>
+      </div>
+      <div id="korean-news-grid" class="news-grid" aria-live="polite"></div>
+      <div class="load-more-wrap">
+        <button type="button" id="korean-load-more-button" class="load-more-button" hidden>더 많은 뉴스 보기</button>
+      </div>
+    </section>
+
+    <section id="english-news-section" class="language-section" aria-labelledby="english-news-heading" hidden>
+      <h1 id="english-news-heading" class="language-heading">영어 뉴스</h1>
+      <div id="english-news-loading" class="language-loading" hidden>
+        <div class="spinner" aria-hidden="true"></div>
+        <p>뉴스를 불러오는 중입니다…</p>
+      </div>
+      <div id="english-news-error" class="language-error" hidden>
+        <p>뉴스를 불러오지 못했습니다.</p>
+        <button type="button" class="retry-button">다시 시도</button>
+      </div>
+      <div id="english-news-grid" class="news-grid" aria-live="polite"></div>
+      <div class="load-more-wrap">
+        <button type="button" id="english-load-more-button" class="load-more-button" hidden>더 많은 뉴스 보기</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>
+      이 사이트의 뉴스는
+      <a href="https://freenewsapi.ai" target="_blank" rel="noopener noreferrer">Free News API</a>
+      를 통해 제공되며, 모든 기사의 저작권은 각 언론사에 있습니다. 뉴스 기사를 클릭하면 해당 언론사의 원문 페이지로 이동합니다.
+    </p>
+  </footer>
+
+  <script src="script.js?v=seoul-time"></script>
+</body>
+
+</html>
