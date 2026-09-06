@@ -107,6 +107,7 @@
 
     try {
       return new Intl.DateTimeFormat("ko-KR", {
+        timeZone: "Asia/Seoul",
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
@@ -115,7 +116,9 @@
         hour12: false,
       }).format(date);
     } catch (_err) {
-      return date.toLocaleString("ko-KR");
+      return date.toLocaleString("ko-KR", {
+        timeZone: "Asia/Seoul"
+      });
     }
   }
 
