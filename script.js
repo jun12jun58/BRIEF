@@ -102,24 +102,12 @@
 
   function formatPublishedAt(isoString) {
     if (!isoString) return "날짜 정보 없음";
-    const date = new Date(isoString);
-    if (Number.isNaN(date.getTime())) return "날짜 정보 없음";
+    const parts = isoString.match(
+      /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/
+    );
+    if (!parts) return "날짜 정보 없음";
 
-    try {
-      return new Intl.DateTimeFormat("ko-KR", {
-        timeZone: "Asia/Seoul",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      }).format(date);
-    } catch (_err) {
-      return date.toLocaleString("ko-KR", {
-        timeZone: "Asia/Seoul"
-      });
-    }
+    return `${parts[1]}. ${parts[2]}. ${parts[3]}. ${parts[4]}:${parts[5]}`;
   }
 
   function resolvePublisherName(article) {
