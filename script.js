@@ -16,6 +16,51 @@
   const NEWS_COUNTRY = "KR";
   const PAGE_SIZE = 15;
   const SEARCH_DEBOUNCE_MS = 500;
+  const BLOCKED_HOSTS = new Set([
+    "newspim.com",
+  ]);
+
+  const PASTEL_BACKGROUND_COLORS_LIGHT = [
+    "#F7E9D8",
+    "#DDEAE2",
+    "#E8DDF6",
+    "#DCEBFA",
+    "#FBE5EA",
+    "#FBEEDC",
+    "#DCEDEB",
+    "#EFDCEC",
+    "#E8F2CE",
+    "#FCEFD7",
+    "#D6EAF2",
+    "#F7DCCB",
+  ];
+
+  const PASTEL_BACKGROUND_COLORS_DARK = [
+    "#805F4A",
+    "#57776E",
+    "#705E89",
+    "#587A8C",
+    "#9B6875",
+    "#9B8063",
+    "#496C6B",
+    "#836878",
+    "#668B6D",
+    "#9B725B",
+    "#607884",
+    "#8C6B62",
+  ];
+
+  const sourceBackgroundMap = {
+    light: new Map(),
+    dark: new Map(),
+  };
+
+  const sourceColorIndexMap = {
+    light: new Map(),
+    dark: new Map(),
+  };
+
+  let currentTheme = "light";
   /** 필터·중복 제거로 결과가 거의 없을 때 무한 요청을 막기 위한 한 배치 최대 API 호출 수 */
   const MAX_FETCH_ATTEMPTS_PER_BATCH = 10;
   const API_OFFSET_CAP = 9900;
@@ -27,6 +72,11 @@
   const searchForm = document.getElementById("search-form");
   const searchInput = document.getElementById("search-input");
   const resetButton = document.getElementById("reset-button");
+  const settingsButton = document.getElementById("settings-button");
+  const settingsPanel = document.getElementById("settings-panel");
+  const settingsCloseButton = document.getElementById("settings-close");
+  const themeChoiceButtons = Array.from(document.querySelectorAll(".theme-choice"));
+  const noImagePaletteToggle = document.getElementById("no-image-palette-toggle");
   const languageSwitchButtons = document.querySelectorAll(".language-switch-button");
   const languageSections = {
     ko: document.getElementById("korean-news-section"),
@@ -59,6 +109,8 @@
     ko: languageErrors.ko.querySelector(".retry-button"),
     en: languageErrors.en.querySelector(".retry-button"),
   };
+
+  let noImagePaletteEnabled = true;
 
   // -------------------------------------------------------------------
   // 상태
@@ -183,6 +235,23 @@
     getDedupeKeys(article).forEach((k) => seenKeys.add(k));
   }
 
+  function getSourceBackgroundColor(sourceName) {
+    const publisher = String(sourceName || "").trim().toLowerCase();
+    const palette = currentTheme === "dark" ? PASTEL_BACKGROUND_COLORS_DARK : PASTEL_BACKGROUND_COLORS_LIGHT;
+    if (!publisher) return palette[0];
+
+    const targetMap = sourceBackgroundMap[currentTheme];
+    const targetIndexMap = sourceColorIndexMap[currentTheme];
+    if (!targetMap.has(publisher)) {
+      const index = targetIndexMap.size % palette.length;
+      const chosen = palette[index];
+      targetMap.set(publisher, chosen);
+      targetIndexMap.set(publisher, index);
+    }
+
+    return targetMap.get(publisher);
+  }
+
   function setHidden(el, hidden) {
     if (el) el.hidden = hidden;
   }
@@ -195,10 +264,16 @@
     });
   }
 
+  function isBlockedSource(article) {
+    const host = resolveHost(article);
+    return host && BLOCKED_HOSTS.has(host);
+  }
+
   /** API 결과에서 중복 기사 제거 */
   function filterAndDedup(results, seenKeys) {
     const unique = [];
     for (const article of results) {
+      if (isBlockedSource(article)) continue;
       if (isDuplicate(article, seenKeys)) continue;
       markSeen(article, seenKeys);
       unique.push(article);
@@ -209,6 +284,28 @@
   // -------------------------------------------------------------------
   // 렌더링
   // -------------------------------------------------------------------
+
+  function getNoImageFallbackBackground() {
+    return currentTheme === "dark"
+      ? "#45484f"
+      : "linear-gradient(145deg, #ecece8 0%, #e2e2de 100%)";
+  }
+
+  function applyThemeToNoImageCards() {
+    Object.values(newsGrids).forEach((grid) => {
+      grid.querySelectorAll(".news-card-thumb.no-image").forEach((thumb) => {
+        const sourceLabel = thumb.querySelector(".no-image-source")?.textContent?.trim();
+        if (!sourceLabel) return;
+
+        if (!noImagePaletteEnabled) {
+          thumb.style.background = getNoImageFallbackBackground();
+          return;
+        }
+
+        thumb.style.background = getSourceBackgroundColor(sourceLabel);
+      });
+    });
+  }
 
   function createNewsCard(article) {
     const card = document.createElement("article");
@@ -229,7 +326,17 @@
     thumb.className = "news-card-thumb";
 
     const hasImage = Boolean(article.image);
-    if (!hasImage) thumb.classList.add("no-image");
+    if (!hasImage) {
+      thumb.classList.add("no-image");
+      const publisher = resolvePublisherName(article);
+      thumb.style.background = getSourceBackgroundColor(publisher);
+
+      const noImageSource = document.createElement("div");
+      noImageSource.className = "no-image-source";
+      noImageSource.textContent = publisher;
+      noImageSource.setAttribute("aria-label", publisher);
+      thumb.appendChild(noImageSource);
+    }
 
     if (hasImage) {
       const img = document.createElement("img");
@@ -239,6 +346,15 @@
       img.referrerPolicy = "no-referrer";
       img.addEventListener("error", () => {
         thumb.classList.add("no-image");
+        const publisher = resolvePublisherName(article);
+        thumb.style.background = getSourceBackgroundColor(publisher);
+
+        const noImageSource = document.createElement("div");
+        noImageSource.className = "no-image-source";
+        noImageSource.textContent = publisher;
+        noImageSource.setAttribute("aria-label", publisher);
+        thumb.appendChild(noImageSource);
+
         img.remove();
       });
       thumb.appendChild(img);
@@ -590,7 +706,74 @@
     });
   });
 
+  function openSettingsPanel() {
+    if (settingsPanel) {
+      settingsPanel.hidden = false;
+      settingsButton.setAttribute("aria-expanded", "true");
+      settingsButton.blur();
+      document.documentElement.classList.add("settings-open");
+      document.body.classList.add("settings-open");
+    }
+  }
+
+  function closeSettingsPanel() {
+    if (settingsPanel) {
+      settingsPanel.hidden = true;
+      settingsButton.setAttribute("aria-expanded", "false");
+      settingsButton.blur();
+      document.documentElement.classList.remove("settings-open");
+      document.body.classList.remove("settings-open");
+    }
+  }
+
+  function setTheme(theme) {
+    currentTheme = theme === "dark" ? "dark" : "light";
+    document.body.dataset.theme = currentTheme;
+
+    themeChoiceButtons.forEach((button) => {
+      const isActive = button.dataset.theme === currentTheme;
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-pressed", String(isActive));
+    });
+
+    themeChoiceButtons[0].closest(".theme-switcher").setAttribute("data-active-theme", currentTheme);
+    applyThemeToNoImageCards();
+  }
+
+  function setNoImagePaletteEnabled(enabled) {
+    noImagePaletteEnabled = Boolean(enabled);
+    const usePalette = noImagePaletteEnabled;
+    noImagePaletteToggle.classList.toggle("is-on", usePalette);
+    noImagePaletteToggle.classList.toggle("is-off", !usePalette);
+    noImagePaletteToggle.setAttribute("aria-pressed", String(usePalette));
+    noImagePaletteToggle.querySelector(".toggle-text").textContent = usePalette ? "ON" : "OFF";
+
+    applyThemeToNoImageCards();
+  }
+
+  settingsButton.addEventListener("click", () => {
+    if (settingsPanel.hidden) {
+      openSettingsPanel();
+    } else {
+      closeSettingsPanel();
+    }
+  });
+
+  settingsCloseButton.addEventListener("click", closeSettingsPanel);
+
+  themeChoiceButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      setTheme(button.dataset.theme);
+    });
+  });
+
+  noImagePaletteToggle.addEventListener("click", () => {
+    const enabled = noImagePaletteToggle.getAttribute("aria-pressed") !== "true";
+    setNoImagePaletteEnabled(enabled);
+  });
+
   document.addEventListener("DOMContentLoaded", () => {
+    setTheme("light");
     loadNews("");
   });
 })();
