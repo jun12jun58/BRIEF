@@ -32,6 +32,39 @@
     </div>
   </header>
 
+  <section id="settings-panel" class="settings-panel" hidden>
+    <div class="settings-card" role="dialog" aria-modal="true" aria-label="설정">
+      <div class="settings-card-head">
+        <span class="settings-card-title">설정</span>
+        <button type="button" id="settings-close" class="settings-close" aria-label="설정 닫기">×</button>
+      </div>
+      <div class="settings-card-body">
+        <div class="settings-row">
+          <span class="settings-label">모드 선택</span>
+          <div class="theme-switcher">
+            <span class="theme-switcher-glider" aria-hidden="true"></span>
+            <button type="button" class="theme-choice is-active" data-theme="light" aria-pressed="true">
+              <span class="theme-choice-label">화이트</span>
+            </button>
+            <button type="button" class="theme-choice" data-theme="dark" aria-pressed="false">
+              <span class="theme-choice-label">다크</span>
+            </button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">이미지 없는 뉴스 배경색</span>
+          <button type="button" id="no-image-palette-toggle" class="toggle-switch is-on" aria-pressed="true"
+            aria-label="이미지 없는 뉴스 배경색 사용">
+            <span class="toggle-track">
+              <span class="toggle-thumb"></span>
+            </span>
+            <span class="toggle-text">ON</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <main class="page">
     <p id="status-bar" class="status-bar" role="status" aria-live="polite"></p>
 
@@ -80,6 +113,15 @@
       를 통해 제공되며, 모든 기사의 저작권은 각 언론사에 있습니다. 뉴스 기사를 클릭하면 해당 언론사의 원문 페이지로 이동합니다.
     </p>
   </footer>
+
+  <button type="button" id="settings-button" class="settings-button" aria-label="설정 열기" aria-haspopup="dialog"
+    aria-expanded="false">
+    <svg viewBox="0 0 24 24" class="settings-icon" aria-hidden="true">
+      <line x1="4" y1="7" x2="20" y2="7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <line x1="4" y1="12" x2="20" y2="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <line x1="4" y1="17" x2="20" y2="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+    </svg>
+  </button>
 
   <script src="script.js?v=seoul-time"></script>
 </body>
