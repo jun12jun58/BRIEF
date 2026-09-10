@@ -68,6 +68,10 @@ body[data-theme='dark'] .wordmark::before {
   background: var(--color-accent);
 }
 
+body[data-theme='dark'] .search-submit {
+  color: #111111;
+}
+
 [hidden] {
   display: none !important;
 }
