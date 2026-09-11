@@ -188,6 +188,7 @@ button {
   border: 1px solid var(--color-line);
   border-radius: 50%;
   background: var(--color-surface);
+  box-shadow: none;
   color: var(--color-ink);
   cursor: pointer;
   transition: background var(--ease), color var(--ease), border-color var(--ease), transform var(--ease);
