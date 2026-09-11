@@ -746,7 +746,7 @@
     noImagePaletteToggle.classList.toggle("is-on", usePalette);
     noImagePaletteToggle.classList.toggle("is-off", !usePalette);
     noImagePaletteToggle.setAttribute("aria-pressed", String(usePalette));
-    noImagePaletteToggle.querySelector(".toggle-text").textContent = usePalette ? "ON" : "OFF";
+    noImagePaletteToggle.querySelector(".toggle-text").textContent = usePalette ? "On" : "Off";
 
     applyThemeToNoImageCards();
   }
