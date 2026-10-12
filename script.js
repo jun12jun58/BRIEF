@@ -1,21 +1,40 @@
-/* ==========================================================================
-   BRIEF — script.js
-   Free News API (https://freenewsapi.ai) 연동 로직
-   - API 키/회원가입 불필요, CORS 허용, fetch()로 브라우저에서 직접 호출
-   - 클라이언트 필터·중복 제거 후에도 화면에 보이는 카드는 항상 PAGE_SIZE(15) 단위
-   ========================================================================== */
-
 (() => {
   "use strict";
-
-  // -------------------------------------------------------------------
-  // 상수 / 설정
-  // -------------------------------------------------------------------
-
+   
   const API_ENDPOINT = "https://freenewsapi.ai/v1/search";
   const NEWS_COUNTRY = "KR";
   const PAGE_SIZE = 15;
   const SEARCH_DEBOUNCE_MS = 500;
+  const ACCENT_STORAGE_KEY = "brief-accent-color";
+  const THEME_STORAGE_KEY = "brief-theme";
+  const NO_IMAGE_PALETTE_STORAGE_KEY = "brief-no-image-palette";
+  const ACTIVE_LANGUAGE_STORAGE_KEY = "brief-active-language";
+  const ACCENT_COLORS = {
+    green: {
+      light: ["#0d8a56", "#0a6e44", "#e8f6ef", "#c5e8d6"],
+      dark: ["#8ee1af", "#b9f2d1", "#132d22", "#244a36"],
+    },
+    yellow: {
+      light: ["#ce8621", "#da882a", "#fefce8", "#f7bb6d"],
+      dark: ["#fdb447", "#fed38a", "#714711", "#b87528"],
+    },
+    blue: {
+      light: ["#2563eb", "#1d4ed8", "#eff6ff", "#bfdbfe"],
+      dark: ["#93c5fd", "#bfdbfe", "#172554", "#1e3a8a"],
+    },
+    red: {
+      light: ["#dc2626", "#b91c1c", "#fef2f2", "#fecaca"],
+      dark: ["#fca5a5", "#fecaca", "#450a0a", "#7f1d1d"],
+    },
+    black: {
+      light: ["#262626", "#000000", "#f5f5f5", "#d4d4d4"],
+      dark: ["#e5e5e5", "#fafafa", "#262626", "#525252"],
+    },
+    pink: {
+      light: ["#db2777", "#be185d", "#fdf2f8", "#fbcfe8"],
+      dark: ["#f9a8d4", "#fbcfe8", "#500724", "#831843"],
+    },
+  };
   const BLOCKED_HOSTS = new Set([
     "newspim.com",
   ]);
@@ -36,18 +55,18 @@
   ];
 
   const PASTEL_BACKGROUND_COLORS_DARK = [
-    "#805F4A",
-    "#57776E",
-    "#705E89",
-    "#587A8C",
-    "#9B6875",
-    "#9B8063",
-    "#496C6B",
-    "#836878",
-    "#668B6D",
-    "#9B725B",
-    "#607884",
-    "#8C6B62",
+    "#7798a5",
+    "#ab6e83",
+    "#879d6b",
+    "#a4765c",
+    "#a45e78",
+    "#ac8e6d",
+    "#5c8785",
+    "#745c69",
+    "#709c70",
+    "#50718e",
+    "#9f6d4d",
+    "#a48076",
   ];
 
   const sourceBackgroundMap = {
@@ -61,13 +80,10 @@
   };
 
   let currentTheme = "light";
-  /** 필터·중복 제거로 결과가 거의 없을 때 무한 요청을 막기 위한 한 배치 최대 API 호출 수 */
+  let currentAccentColor = "green";
+   
   const MAX_FETCH_ATTEMPTS_PER_BATCH = 10;
   const API_OFFSET_CAP = 9900;
-
-  // -------------------------------------------------------------------
-  // DOM 참조
-  // -------------------------------------------------------------------
 
   const searchForm = document.getElementById("search-form");
   const searchInput = document.getElementById("search-input");
@@ -75,7 +91,19 @@
   const settingsButton = document.getElementById("settings-button");
   const settingsPanel = document.getElementById("settings-panel");
   const settingsCloseButton = document.getElementById("settings-close");
+  const articlePreviewPanel = document.getElementById("article-preview-panel");
+  const articlePreviewCloseButton = document.getElementById("article-preview-close");
+  const articlePreviewSource = document.getElementById("article-preview-source");
+  const articlePreviewDate = document.getElementById("article-preview-date");
+  const articlePreviewTitle = document.getElementById("article-preview-title");
+  const articlePreviewSummary = document.getElementById("article-preview-summary");
+  const articlePreviewImage = document.getElementById("article-preview-image");
+  const articlePreviewUrlWrap = document.getElementById("article-preview-url-wrap");
+  const articlePreviewUrl = document.getElementById("article-preview-url");
+  const articlePreviewCopyButton = document.getElementById("article-preview-copy");
+  const articlePreviewLink = document.getElementById("article-preview-link");
   const themeChoiceButtons = Array.from(document.querySelectorAll(".theme-choice"));
+  const accentColorButtons = Array.from(document.querySelectorAll(".accent-color-choice"));
   const noImagePaletteToggle = document.getElementById("no-image-palette-toggle");
   const languageSwitchButtons = document.querySelectorAll(".language-switch-button");
   const languageSections = {
@@ -112,10 +140,6 @@
 
   let noImagePaletteEnabled = true;
 
-  // -------------------------------------------------------------------
-  // 상태
-  // -------------------------------------------------------------------
-
   const state = {
     query: "",
     isLoading: false,
@@ -127,6 +151,7 @@
 
   const activeControllers = { ko: null, en: null };
   let debounceTimer = null;
+  let articlePreviewTrigger = null;
 
   function setActiveLanguage(language) {
     Object.entries(languageSections).forEach(([key, section]) => {
@@ -148,9 +173,26 @@
     languageLoadings[language].hidden = !visible;
   }
 
-  // -------------------------------------------------------------------
-  // 유틸리티
-  // -------------------------------------------------------------------
+  function decodeHtmlEntities(value) {
+    if (typeof value !== "string") return "";
+
+    let decoded = value;
+    let previous;
+
+    while (decoded !== previous) {
+      previous = decoded;
+      const textarea = document.createElement("textarea");
+      textarea.innerHTML = decoded;
+      decoded = textarea.value;
+    }
+
+    return decoded;
+  }
+
+  function getDisplayText(value, fallback) {
+    const decoded = decodeHtmlEntities(value ?? "").trim();
+    return decoded || fallback;
+  }
 
   function formatPublishedAt(isoString) {
     if (!isoString) return "날짜 정보 없음";
@@ -163,19 +205,14 @@
   }
 
   function resolvePublisherName(article) {
-    if (article.sitename && article.sitename.trim()) return article.sitename.trim();
-    if (article.host) return article.host;
+    if (article.sitename && article.sitename.trim()) return getDisplayText(article.sitename, "알 수 없는 언론사");
+    if (article.host) return getDisplayText(article.host, "알 수 없는 언론사");
     return "알 수 없는 언론사";
   }
 
-  /**
-   * 중복 판별용 키 생성
-   * - 같은 언론사(host) + 정규화한 제목 → URL만 다른 동일 기사 차단
-   * - URL 자체도 정규화해 보조 키로 사용
-   */
   function normalizeTitle(title) {
     if (!title || typeof title !== "string") return "";
-    return title
+    return decodeHtmlEntities(title)
       .toLowerCase()
       .replace(/\s+/g, " ")
       .replace(/[“”"']/g, "")
@@ -184,34 +221,47 @@
       .trim();
   }
 
+  function normalizeNewsHost(hostname) {
+    const host = hostname.replace(/^www\./, "").toLowerCase().trim();
+    return host === "m.seoul.co.kr" ? "seoul.co.kr" : host;
+  }
+
   function normalizeUrl(url) {
     if (!url || typeof url !== "string") return "";
     try {
       const u = new URL(url);
-      // 쿼리·해시 제거, www. 제거, trailing slash 제거
       let path = u.pathname.replace(/\/+$/, "") || "/";
-      const host = u.hostname.replace(/^www\./, "").toLowerCase();
+      const host = normalizeNewsHost(u.hostname);
       return `${host}${path}`;
     } catch (_err) {
       return url.trim().toLowerCase();
     }
   }
 
+  function getSavedActiveLanguage() {
+    try {
+      const savedLanguage = localStorage.getItem(ACTIVE_LANGUAGE_STORAGE_KEY);
+      return savedLanguage === "en" ? "en" : "ko";
+    } catch (error) {
+      console.error("뉴스 언어 설정을 불러오지 못했습니다.", error);
+      return "ko";
+    }
+  }
+
   function resolveHost(article) {
     if (article.host && typeof article.host === "string") {
-      return article.host.replace(/^www\./, "").toLowerCase().trim();
+      return normalizeNewsHost(article.host);
     }
     if (article.url) {
       try {
-        return new URL(article.url).hostname.replace(/^www\./, "").toLowerCase();
+        return normalizeNewsHost(new URL(article.url).hostname);
       } catch (_err) {
         /* ignore */
       }
     }
     return "";
   }
-
-  /** 기사 하나를 식별하는 중복 키들 (하나라도 이미 봤으면 중복) */
+   
   function getDedupeKeys(article) {
     const keys = [];
     const host = resolveHost(article);
@@ -220,7 +270,6 @@
 
     if (urlKey) keys.push(`url:${urlKey}`);
     if (host && title) keys.push(`ht:${host}|${title}`);
-    // 제목만으로도 강한 일치가 있으면 (길이가 충분할 때) 차단
     if (title.length >= 20) keys.push(`t:${title}`);
 
     return keys;
@@ -269,11 +318,17 @@
     return host && BLOCKED_HOSTS.has(host);
   }
 
-  /** API 결과에서 중복 기사 제거 */
-  function filterAndDedup(results, seenKeys) {
+  function filterAndDedup(results, seenKeys, language) {
     const unique = [];
     for (const article of results) {
       if (isBlockedSource(article)) continue;
+      if (
+        language === "en" &&
+        (typeof article.country !== "string" ||
+          article.country.toUpperCase() === NEWS_COUNTRY)
+      ) {
+        continue;
+      }
       if (isDuplicate(article, seenKeys)) continue;
       markSeen(article, seenKeys);
       unique.push(article);
@@ -281,14 +336,16 @@
     return unique;
   }
 
-  // -------------------------------------------------------------------
-  // 렌더링
-  // -------------------------------------------------------------------
-
   function getNoImageFallbackBackground() {
     return currentTheme === "dark"
       ? "#45484f"
       : "linear-gradient(145deg, #ecece8 0%, #e2e2de 100%)";
+  }
+
+  function applyNoImageCardBackground(thumb, sourceLabel) {
+    thumb.style.background = noImagePaletteEnabled
+      ? getSourceBackgroundColor(sourceLabel)
+      : getNoImageFallbackBackground();
   }
 
   function applyThemeToNoImageCards() {
@@ -296,31 +353,24 @@
       grid.querySelectorAll(".news-card-thumb.no-image").forEach((thumb) => {
         const sourceLabel = thumb.querySelector(".no-image-source")?.textContent?.trim();
         if (!sourceLabel) return;
-
-        if (!noImagePaletteEnabled) {
-          thumb.style.background = getNoImageFallbackBackground();
-          return;
-        }
-
-        thumb.style.background = getSourceBackgroundColor(sourceLabel);
+        applyNoImageCardBackground(thumb, sourceLabel);
       });
     });
   }
 
-  function createNewsCard(article) {
+  function createNewsCard(article, language) {
     const card = document.createElement("article");
     card.className = "news-card";
 
-    const coverLink = document.createElement("a");
-    coverLink.className = "news-card-cover";
-    coverLink.href = article.url || "#";
-    coverLink.target = "_blank";
-    coverLink.rel = "noopener noreferrer";
-    coverLink.setAttribute(
+    const previewButton = document.createElement("button");
+    previewButton.type = "button";
+    previewButton.className = "news-card-cover";
+    previewButton.setAttribute(
       "aria-label",
-      `${article.title || "제목 없는 기사"} — 원문 기사 열기`
+      `${getDisplayText(article.title, "제목 없는 기사")} — 기사 요약 보기`
     );
-    card.appendChild(coverLink);
+    previewButton.addEventListener("click", () => openArticlePreview(article, previewButton, language));
+    card.appendChild(previewButton);
 
     const thumb = document.createElement("div");
     thumb.className = "news-card-thumb";
@@ -329,7 +379,7 @@
     if (!hasImage) {
       thumb.classList.add("no-image");
       const publisher = resolvePublisherName(article);
-      thumb.style.background = getSourceBackgroundColor(publisher);
+      applyNoImageCardBackground(thumb, publisher);
 
       const noImageSource = document.createElement("div");
       noImageSource.className = "no-image-source";
@@ -347,7 +397,7 @@
       img.addEventListener("error", () => {
         thumb.classList.add("no-image");
         const publisher = resolvePublisherName(article);
-        thumb.style.background = getSourceBackgroundColor(publisher);
+        applyNoImageCardBackground(thumb, publisher);
 
         const noImageSource = document.createElement("div");
         noImageSource.className = "no-image-source";
@@ -382,15 +432,15 @@
 
     const title = document.createElement("h2");
     title.className = "news-card-title";
-    title.textContent = article.title || "제목 없는 기사";
+    title.textContent = getDisplayText(article.title, "제목 없는 기사");
     body.appendChild(title);
 
     const desc = document.createElement("p");
     desc.className = "news-card-desc";
-    desc.textContent =
-      article.description && article.description.trim()
-        ? article.description.trim()
-        : "이 기사에는 요약 설명이 제공되지 않습니다.";
+    desc.textContent = getDisplayText(
+      article.description,
+      "이 기사에는 요약 설명이 제공되지 않습니다."
+    );
     body.appendChild(desc);
 
     const footer = document.createElement("div");
@@ -424,7 +474,7 @@
     if (!append) newsGrid.innerHTML = "";
     const fragment = document.createDocumentFragment();
     articles.forEach((article) => {
-      fragment.appendChild(createNewsCard(article));
+      fragment.appendChild(createNewsCard(article, language));
     });
     newsGrid.appendChild(fragment);
   }
@@ -446,24 +496,27 @@
     loadMoreButton.textContent = "더 많은 뉴스 보기";
   }
 
-  // -------------------------------------------------------------------
   // API 호출
-  // -------------------------------------------------------------------
 
   function buildRequestUrl(query, language, offset) {
     const params = new URLSearchParams();
     const trimmed = query.trim();
+    const searchQuery =
+      language === "en"
+        ? [trimmed, "Korea"].filter(Boolean).join(" ")
+        : trimmed;
 
-    if (trimmed) {
-      params.set("q", trimmed);
+    if (searchQuery) {
+      params.set("q", searchQuery);
       params.set("sort", "relevance");
     } else {
       params.set("sort", "date");
     }
 
-    params.set("country", NEWS_COUNTRY);
+    if (language === "ko") params.set("country", NEWS_COUNTRY);
     params.set("lang", language);
     params.set("size", String(PAGE_SIZE));
+    params.set("full_text", "true");
     if (offset > 0) params.set("offset", String(offset));
 
     return `${API_ENDPOINT}?${params.toString()}`;
@@ -516,10 +569,6 @@
     };
   }
 
-  /**
-   * 필터·중복 제거를 통과한 기사가 targetCount개가 될 때까지 API 페이지를 가져온다.
-   * leftover는 먼저 소진하고, 새로 본 기사는 seenKeys에 기록한다.
-   */
   async function collectFilteredArticles(query, language, startOffset, targetCount, signal) {
     const languageState = state.languages[language];
     const collected = [...languageState.leftover];
@@ -542,7 +591,7 @@
       lastTotal = page.total;
       lastTotalIsLowerBound = page.totalIsLowerBound;
 
-      const filtered = filterAndDedup(page.results, languageState.seenKeys);
+      const filtered = filterAndDedup(page.results, languageState.seenKeys, language);
       collected.push(...filtered);
 
       offset += page.results.length;
@@ -658,11 +707,7 @@
     updateLoadMoreButton("en");
     updateStatusBar();
   }
-
-  // -------------------------------------------------------------------
-  // 이벤트 바인딩
-  // -------------------------------------------------------------------
-
+   
   function triggerSearch(query) {
     clearTimeout(debounceTimer);
     resetButton.hidden = query.trim().length === 0;
@@ -703,7 +748,140 @@
   languageSwitchButtons.forEach((button) => {
     button.addEventListener("click", () => {
       setActiveLanguage(button.dataset.language);
+      try {
+        localStorage.setItem(ACTIVE_LANGUAGE_STORAGE_KEY, button.dataset.language);
+      } catch (error) {
+        console.error("뉴스 언어 설정을 저장하지 못했습니다.", error);
+      }
     });
+  });
+
+  function trimKoreanArticleAtCopyright(text) {
+    const lines = text.split(/\r?\n/);
+    const copyrightLineIndex = lines.findIndex((line) => /copyright|ⓒ|©/i.test(line));
+    return copyrightLineIndex === -1 ? text : lines.slice(0, copyrightLineIndex + 1).join("\n");
+  }
+
+  function cleanArticleBody(text, language) {
+    const source = language === "ko" ? trimKoreanArticleAtCopyright(text) : text;
+    const normalized = source
+      .replace(/\r\n?/g, "\n")
+      .replace(/[\u200B-\u200D\uFEFF]/g, "")
+      .replace(/[ \t]+/g, " ")
+      .replace(/ *\n */g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+    return normalized;
+  }
+
+  function openArticlePreview(article, trigger, language) {
+    articlePreviewSource.textContent = resolvePublisherName(article);
+    articlePreviewDate.textContent = article.published_at ? formatPublishedAt(article.published_at) : "날짜 정보 없음";
+    articlePreviewDate.dateTime = article.published_at || "";
+    articlePreviewTitle.textContent = getDisplayText(article.title, "제목 없는 기사");
+    const articleText = getDisplayText(article.text, "") || getDisplayText(article.description, "");
+    const cleanedArticleText = cleanArticleBody(articleText, language);
+    const hasArticleContent = Boolean(cleanedArticleText);
+    articlePreviewSummary.textContent = hasArticleContent
+      ? cleanedArticleText
+      : "이 기사에는 요약 설명이 제공되지 않습니다.";
+
+    articlePreviewImage.hidden = true;
+    articlePreviewImage.removeAttribute("src");
+    if (article.image && hasArticleContent) {
+      articlePreviewImage.onload = () => {
+        articlePreviewImage.hidden = false;
+      };
+      articlePreviewImage.onerror = () => {
+        articlePreviewImage.hidden = true;
+        articlePreviewImage.removeAttribute("src");
+      };
+      articlePreviewImage.src = article.image;
+    }
+
+    if (article.url) {
+      articlePreviewLink.href = article.url;
+      articlePreviewLink.hidden = false;
+      articlePreviewUrl.textContent = article.url;
+      articlePreviewUrl.title = article.url;
+      articlePreviewCopyButton.dataset.url = article.url;
+      articlePreviewCopyButton.classList.remove("is-copied");
+      articlePreviewCopyButton.setAttribute("aria-label", "기사 링크 복사");
+      articlePreviewCopyButton.title = "기사 링크 복사";
+      articlePreviewUrlWrap.hidden = false;
+    } else {
+      articlePreviewLink.removeAttribute("href");
+      articlePreviewLink.hidden = true;
+      articlePreviewUrl.textContent = "";
+      articlePreviewUrl.removeAttribute("title");
+      delete articlePreviewCopyButton.dataset.url;
+      articlePreviewUrlWrap.hidden = true;
+    }
+
+    articlePreviewTrigger = trigger;
+    articlePreviewPanel.hidden = false;
+    document.documentElement.classList.add("article-preview-open");
+    document.body.classList.add("article-preview-open");
+    articlePreviewCloseButton.focus();
+  }
+
+  function closeArticlePreview() {
+    if (articlePreviewPanel.hidden) return;
+
+    articlePreviewPanel.hidden = true;
+    document.documentElement.classList.remove("article-preview-open");
+    document.body.classList.remove("article-preview-open");
+    if (articlePreviewTrigger) articlePreviewTrigger.focus();
+    articlePreviewTrigger = null;
+  }
+
+  articlePreviewCloseButton.addEventListener("click", closeArticlePreview);
+  articlePreviewCopyButton.addEventListener("click", async () => {
+    const url = articlePreviewCopyButton.dataset.url;
+    if (!url) return;
+
+    try {
+      await navigator.clipboard.writeText(url);
+      articlePreviewCopyButton.classList.add("is-copied");
+      articlePreviewCopyButton.setAttribute("aria-label", "링크 복사됨");
+      articlePreviewCopyButton.title = "링크 복사됨";
+    } catch (error) {
+      console.error("기사 링크를 클립보드에 복사하지 못했습니다.", error);
+      articlePreviewCopyButton.setAttribute("aria-label", "링크 복사 실패");
+      articlePreviewCopyButton.title = "링크 복사 실패";
+    }
+
+    setTimeout(() => {
+      articlePreviewCopyButton.classList.remove("is-copied");
+      articlePreviewCopyButton.setAttribute("aria-label", "기사 링크 복사");
+      articlePreviewCopyButton.title = "기사 링크 복사";
+    }, 1600);
+  });
+  articlePreviewPanel.addEventListener("click", (event) => {
+    if (event.target === articlePreviewPanel) closeArticlePreview();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (articlePreviewPanel.hidden) return;
+
+    if (event.key === "Escape") {
+      closeArticlePreview();
+      return;
+    }
+
+    if (event.key !== "Tab") return;
+
+    const focusableElements = [articlePreviewCloseButton];
+    if (!articlePreviewLink.hidden) focusableElements.push(articlePreviewLink);
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    if (event.shiftKey && document.activeElement === firstElement) {
+      event.preventDefault();
+      lastElement.focus();
+    } else if (!event.shiftKey && document.activeElement === lastElement) {
+      event.preventDefault();
+      firstElement.focus();
+    }
   });
 
   function openSettingsPanel() {
@@ -726,9 +904,66 @@
     }
   }
 
+  function applyAccentColor(accentColor) {
+    currentAccentColor = Object.prototype.hasOwnProperty.call(ACCENT_COLORS, accentColor)
+      ? accentColor
+      : "green";
+    const [accent, accentDark, accentSoft, accentMid] =
+      ACCENT_COLORS[currentAccentColor][currentTheme];
+
+    document.body.dataset.accent = currentAccentColor;
+    document.body.style.setProperty("--color-accent", accent);
+    document.body.style.setProperty("--color-accent-dark", accentDark);
+    document.body.style.setProperty("--color-accent-soft", accentSoft);
+    document.body.style.setProperty("--color-accent-mid", accentMid);
+    document.body.style.setProperty("--color-focus", accent);
+
+    accentColorButtons.forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.accent === currentAccentColor));
+    });
+  }
+
+  function getSavedAccentColor() {
+    try {
+      const savedAccentColor = localStorage.getItem(ACCENT_STORAGE_KEY);
+      return Object.prototype.hasOwnProperty.call(ACCENT_COLORS, savedAccentColor)
+        ? savedAccentColor
+        : "green";
+    } catch (error) {
+      console.error("강조색 설정을 불러오지 못했습니다.", error);
+      return "green";
+    }
+  }
+
+  function getSavedTheme() {
+    try {
+      const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+      return savedTheme === "dark" ? "dark" : "light";
+    } catch (error) {
+      console.error("모드 설정을 불러오지 못했습니다.", error);
+      return "light";
+    }
+  }
+
+  function getSavedNoImagePaletteEnabled() {
+    try {
+      const savedSetting = localStorage.getItem(NO_IMAGE_PALETTE_STORAGE_KEY);
+      return savedSetting === "false" ? false : true;
+    } catch (error) {
+      console.error("이미지 없는 뉴스 배경색 설정을 불러오지 못했습니다.", error);
+      return true;
+    }
+  }
+
   function setTheme(theme) {
     currentTheme = theme === "dark" ? "dark" : "light";
     document.body.dataset.theme = currentTheme;
+    applyAccentColor(currentAccentColor);
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, currentTheme);
+    } catch (error) {
+      console.error("모드 설정을 저장하지 못했습니다.", error);
+    }
 
     themeChoiceButtons.forEach((button) => {
       const isActive = button.dataset.theme === currentTheme;
@@ -746,7 +981,12 @@
     noImagePaletteToggle.classList.toggle("is-on", usePalette);
     noImagePaletteToggle.classList.toggle("is-off", !usePalette);
     noImagePaletteToggle.setAttribute("aria-pressed", String(usePalette));
-    noImagePaletteToggle.querySelector(".toggle-text").textContent = usePalette ? "On" : "Off";
+    noImagePaletteToggle.querySelector(".toggle-text").textContent = usePalette ? "ON" : "OFF";
+    try {
+      localStorage.setItem(NO_IMAGE_PALETTE_STORAGE_KEY, String(usePalette));
+    } catch (error) {
+      console.error("이미지 없는 뉴스 배경색 설정을 저장하지 못했습니다.", error);
+    }
 
     applyThemeToNoImageCards();
   }
@@ -767,13 +1007,27 @@
     });
   });
 
+  accentColorButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      applyAccentColor(button.dataset.accent);
+      try {
+        localStorage.setItem(ACCENT_STORAGE_KEY, currentAccentColor);
+      } catch (error) {
+        console.error("강조색 설정을 저장하지 못했습니다.", error);
+      }
+    });
+  });
+
   noImagePaletteToggle.addEventListener("click", () => {
     const enabled = noImagePaletteToggle.getAttribute("aria-pressed") !== "true";
     setNoImagePaletteEnabled(enabled);
   });
 
   document.addEventListener("DOMContentLoaded", () => {
-    setTheme("light");
+    setActiveLanguage(getSavedActiveLanguage());
+    setTheme(getSavedTheme());
+    applyAccentColor(getSavedAccentColor());
+    setNoImagePaletteEnabled(getSavedNoImagePaletteEnabled());
     loadNews("");
   });
 })();
