@@ -4,8 +4,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BRIEF</title>
-  <meta name="description" content="Free News API를 이용해 한국 관련 뉴스를 검색하고 살펴보는 사이트">
+  <title>BRIEF — 오늘의 뉴스</title>
+  <meta name="description" content="Free News API를 이용해 전 세계 최신 뉴스를 검색하고 살펴보는 사이트">
   <link rel="stylesheet" href="style.css">
 </head>
 
@@ -52,17 +52,65 @@
           </div>
         </div>
         <div class="settings-row">
-          <span class="settings-label">이미지 미제공 뉴스 배경색</span>
+          <span class="settings-label">강조색</span>
+          <div class="accent-color-picker" role="group" aria-label="강조색 선택">
+            <button type="button" class="accent-color-choice" data-accent="red" aria-label="빨강" aria-pressed="false"></button>
+            <button type="button" class="accent-color-choice" data-accent="yellow" aria-label="노랑" aria-pressed="false"></button>
+            <button type="button" class="accent-color-choice" data-accent="green" aria-label="초록" aria-pressed="true"></button>
+            <button type="button" class="accent-color-choice" data-accent="blue" aria-label="파랑" aria-pressed="false"></button>
+            <button type="button" class="accent-color-choice" data-accent="pink" aria-label="핑크" aria-pressed="false"></button>
+            <button type="button" class="accent-color-choice" data-accent="black" aria-label="검정" aria-pressed="false"></button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">이미지 없는 뉴스 배경색</span>
           <button type="button" id="no-image-palette-toggle" class="toggle-switch is-on" aria-pressed="true"
             aria-label="이미지 없는 뉴스 배경색 사용">
             <span class="toggle-track">
               <span class="toggle-thumb"></span>
             </span>
-            <span class="toggle-text">On</span>
+            <span class="toggle-text">ON</span>
           </button>
         </div>
       </div>
     </div>
+  </section>
+
+  <section id="article-preview-panel" class="article-preview-panel" hidden>
+    <article class="article-preview-card" role="dialog" aria-modal="true" aria-labelledby="article-preview-title"
+      aria-describedby="article-preview-summary">
+      <div class="article-preview-head">
+        <div class="article-preview-header-copy">
+          <h2 id="article-preview-title" class="article-preview-title"></h2>
+          <div class="article-preview-meta">
+            <span id="article-preview-source" class="article-preview-source"></span>
+            <time id="article-preview-date" class="article-preview-date"></time>
+          </div>
+        </div>
+        <button type="button" id="article-preview-close" class="settings-close" aria-label="기사 미리보기 닫기">×</button>
+      </div>
+      <div class="article-preview-body">
+        <div class="article-preview-content">
+          <img id="article-preview-image" class="article-preview-image" alt="" hidden>
+          <p id="article-preview-summary" class="article-preview-summary"></p>
+        </div>
+        <div class="article-preview-actions">
+          <div id="article-preview-url-wrap" class="article-preview-url-wrap">
+            <span id="article-preview-url" class="article-preview-url" aria-label="기사 주소"></span>
+            <button type="button" id="article-preview-copy" class="article-preview-copy" aria-label="기사 링크 복사">
+              <svg class="article-preview-copy-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8" />
+                <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" fill="none" stroke="currentColor" stroke-width="1.8" />
+              </svg>
+              <svg class="article-preview-copy-check" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m5 12 4 4L19 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </div>
+          <a id="article-preview-link" class="article-preview-link" target="_blank" rel="noopener noreferrer">원문 보기</a>
+        </div>
+      </div>
+    </article>
   </section>
 
   <main class="page">
@@ -110,7 +158,7 @@
     <p>
       이 사이트의 뉴스는
       <a href="https://freenewsapi.ai" target="_blank" rel="noopener noreferrer">Free News API</a>
-      를 통해 제공되며, 모든 기사의 저작권은 각 언론사에 있습니다. 뉴스 기사를 클릭하면 해당 언론사의 원문 페이지로 이동합니다.
+      를 통해 제공되며, 모든 기사의 저작권은 각 언론사에 있습니다. 기사를 클릭해 요약을 확인한 뒤 원문을 볼 수 있습니다.
     </p>
   </footer>
 
