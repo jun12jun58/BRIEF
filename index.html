@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BRIEF — 오늘의 뉴스</title>
+  <meta name="description" content="Free News API를 이용해 전 세계 최신 뉴스를 검색하고 살펴보는 사이트">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div class="brand-controls">
+        <a href="./" class="wordmark" aria-label="BRIEF 홈으로">BRIEF</a>
+        <nav class="language-switcher" aria-label="뉴스 언어 선택">
+          <button type="button" class="language-switch-button is-active" data-language="ko" aria-pressed="true">한국어
+            뉴스</button>
+          <button type="button" class="language-switch-button" data-language="en" aria-pressed="false">영어 뉴스</button>
+        </nav>
+      </div>
+
+      <form id="search-form" class="search-form" role="search">
+        <div class="search-field-wrap">
+          <label for="search-input" class="sr-only">뉴스 키워드 검색</label>
+          <input type="search" id="search-input" class="search-input" placeholder="뉴스 키워드 검색" autocomplete="off"
+            maxlength="200" aria-controls="search-history-panel" aria-expanded="false">
+          <div id="search-history-panel" class="search-history-panel" aria-label="이전 검색어" hidden>
+            <div class="search-history-head">
+              <span class="search-history-title">이전 검색어</span>
+            </div>
+            <ul id="search-history-list" class="search-history-list"></ul>
+          </div>
+        </div>
+        <button type="submit" class="search-submit" aria-label="검색">검색</button>
+        <button type="button" id="reset-button" class="reset-button" hidden>검색 취소</button>
+      </form>
+    </div>
+  </header>
+
+  <section id="settings-panel" class="settings-panel" hidden>
+    <div class="settings-card" role="dialog" aria-modal="true" aria-label="설정">
+      <div class="settings-card-head">
+        <span class="settings-card-title">설정</span>
+        <button type="button" id="settings-close" class="settings-close" aria-label="설정 닫기">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m6 6 12 12M18 6 6 18" />
+          </svg>
+        </button>
+      </div>
+      <div class="settings-card-body">
+        <div class="settings-row">
+          <span class="settings-label">모드 선택</span>
+          <div class="theme-switcher">
+            <span class="theme-switcher-glider" aria-hidden="true"></span>
+            <button type="button" class="theme-choice is-active" data-theme="light" aria-pressed="true">
+              <span class="theme-choice-label">화이트</span>
+            </button>
+            <button type="button" class="theme-choice" data-theme="dark" aria-pressed="false">
+              <span class="theme-choice-label">다크</span>
+            </button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">강조색</span>
+          <div class="accent-color-picker" role="group" aria-label="강조색 선택">
+            <button type="button" class="accent-color-choice" data-accent="red" aria-label="빨강" aria-pressed="false"></button>
+            <button type="button" class="accent-color-choice" data-accent="yellow" aria-label="노랑" aria-pressed="false"></button>
+            <button type="button" class="accent-color-choice" data-accent="green" aria-label="초록" aria-pressed="true"></button>
+            <button type="button" class="accent-color-choice" data-accent="blue" aria-label="파랑" aria-pressed="false"></button>
+            <button type="button" class="accent-color-choice" data-accent="pink" aria-label="핑크" aria-pressed="false"></button>
+            <button type="button" class="accent-color-choice" data-accent="black" aria-label="검정" aria-pressed="false"></button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">이미지 없는 뉴스 배경색</span>
+          <button type="button" id="no-image-palette-toggle" class="toggle-switch is-on" aria-pressed="true"
+            aria-label="이미지 없는 뉴스 배경색 사용">
+            <span class="toggle-track">
+              <span class="toggle-thumb"></span>
+            </span>
+            <span class="toggle-text">ON</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="article-preview-panel" class="article-preview-panel" hidden>
+    <article class="article-preview-card" role="dialog" aria-modal="true" aria-labelledby="article-preview-title"
+      aria-describedby="article-preview-summary">
+      <div class="article-preview-head">
+        <div class="article-preview-header-copy">
+          <h2 id="article-preview-title" class="article-preview-title"></h2>
+          <div class="article-preview-meta">
+            <span id="article-preview-source" class="article-preview-source"></span>
+            <time id="article-preview-date" class="article-preview-date"></time>
+          </div>
+        </div>
+        <button type="button" id="article-preview-close" class="settings-close" aria-label="기사 미리보기 닫기">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m6 6 12 12M18 6 6 18" />
+          </svg>
+        </button>
+      </div>
+      <div class="article-preview-body">
+        <div class="article-preview-content">
+          <img id="article-preview-image" class="article-preview-image" alt="" hidden>
+          <p id="article-preview-summary" class="article-preview-summary"></p>
+        </div>
+        <div class="article-preview-actions">
+          <div id="article-preview-url-wrap" class="article-preview-url-wrap">
+            <span id="article-preview-url" class="article-preview-url" aria-label="기사 주소"></span>
+            <button type="button" id="article-preview-copy" class="article-preview-copy" aria-label="기사 링크 복사">
+              <svg class="article-preview-copy-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8" />
+                <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" fill="none" stroke="currentColor" stroke-width="1.8" />
+              </svg>
+              <svg class="article-preview-copy-check" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m5 12 4 4L19 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </div>
+          <a id="article-preview-link" class="article-preview-link" target="_blank" rel="noopener noreferrer">원문 보기</a>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <main class="page">
+    <p id="status-bar" class="status-bar" role="status" aria-live="polite"></p>
+
+    <section id="state-empty" class="state-panel" hidden>
+      <p id="empty-message">검색 결과가 없습니다.</p>
+      <p class="state-hint">다른 키워드로 다시 검색해 보세요.</p>
+    </section>
+
+    <section id="korean-news-section" class="language-section" aria-labelledby="korean-news-heading">
+      <h1 id="korean-news-heading" class="language-heading">한국어 뉴스</h1>
+      <div id="korean-news-loading" class="language-loading" hidden>
+        <div class="spinner" aria-hidden="true"></div>
+        <p>뉴스를 불러오는 중입니다…</p>
+      </div>
+      <div id="korean-news-error" class="language-error" hidden>
+        <p>뉴스를 불러오지 못했습니다.</p>
+        <button type="button" class="retry-button">다시 시도</button>
+      </div>
+      <div id="korean-news-grid" class="news-grid" aria-live="polite"></div>
+      <div class="load-more-wrap">
+        <button type="button" id="korean-load-more-button" class="load-more-button" hidden>더 많은 뉴스 보기</button>
+      </div>
+    </section>
+
+    <section id="english-news-section" class="language-section" aria-labelledby="english-news-heading" hidden>
+      <h1 id="english-news-heading" class="language-heading">영어 뉴스</h1>
+      <div id="english-news-loading" class="language-loading" hidden>
+        <div class="spinner" aria-hidden="true"></div>
+        <p>뉴스를 불러오는 중입니다…</p>
+      </div>
+      <div id="english-news-error" class="language-error" hidden>
+        <p>뉴스를 불러오지 못했습니다.</p>
+        <button type="button" class="retry-button">다시 시도</button>
+      </div>
+      <div id="english-news-grid" class="news-grid" aria-live="polite"></div>
+      <div class="load-more-wrap">
+        <button type="button" id="english-load-more-button" class="load-more-button" hidden>더 많은 뉴스 보기</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>
+      이 사이트의 뉴스는
+      <a href="https://freenewsapi.ai" target="_blank" rel="noopener noreferrer">Free News API</a>
+      를 통해 제공되며, 모든 기사의 저작권은 각 언론사에 있습니다. 기사를 클릭해 요약을 확인한 뒤 원문을 볼 수 있습니다.
+    </p>
+  </footer>
+
+  <button type="button" id="settings-button" class="settings-button" aria-label="설정 열기" aria-haspopup="dialog"
+    aria-expanded="false">
+    <svg viewBox="0 0 24 24" class="settings-icon" aria-hidden="true">
+      <line x1="4" y1="7" x2="20" y2="7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <line x1="4" y1="12" x2="20" y2="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <line x1="4" y1="17" x2="20" y2="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+    </svg>
+  </button>
+
+  <script src="scripts/article-preview.js"></script>
+  <script src="scripts/settings.js"></script>
+  <script src="script.js?v=history-scrollbar-layout"></script>
+</body>
+
+</html>
