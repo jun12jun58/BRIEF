@@ -15,7 +15,7 @@
   const API_ENDPOINT = "https://freenewsapi.ai/v1/search";
   const NEWS_COUNTRY = "KR";
   const PAGE_SIZE = 15;
-  const SEARCH_DEBOUNCE_MS = 300;
+  const SEARCH_DEBOUNCE_MS = 500;
   const SEARCH_HISTORY_STORAGE_KEY = "brief-search-history";
   const SEARCH_HISTORY_LIMIT = 10;
   const ACTIVE_LANGUAGE_STORAGE_KEY = "brief-active-language";
