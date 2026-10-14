@@ -104,7 +104,8 @@
         </div>
         <div class="article-preview-body">
           <div class="article-preview-content">
-            <img id="article-preview-image" class="article-preview-image" alt="" hidden>
+            <img id="article-preview-image" class="article-preview-image" alt="" role="button" tabindex="0"
+              aria-label="사진 크게 보기" hidden>
             <p id="article-preview-summary" class="article-preview-summary"></p>
           </div>
         </div>
@@ -125,6 +126,16 @@
         <a id="article-preview-link" class="article-preview-link" target="_blank" rel="noopener noreferrer">원문 보기</a>
       </div>
     </article>
+    <div id="article-image-viewer" class="article-image-viewer" role="dialog" aria-modal="true"
+      aria-label="기사 사진" hidden>
+      <button type="button" id="article-image-viewer-close" class="article-image-viewer-close"
+        aria-label="사진 크게 보기 닫기">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m6 6 12 12M18 6 6 18" />
+        </svg>
+      </button>
+      <img id="article-image-viewer-image" class="article-image-viewer-image" alt="">
+    </div>
   </section>
 
   <main class="page">
