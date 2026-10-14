@@ -1,0 +1,91 @@
+/* ---------- Footer ---------- */
+
+.site-footer {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 28px 20px 48px;
+  border-top: 1px solid var(--color-line);
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+  line-height: 1.65;
+}
+
+.site-footer a {
+  color: var(--color-accent-dark);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 500;
+}
+
+.site-footer a:hover {
+  color: var(--color-accent);
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 640px) {
+  .settings-row {
+    flex-wrap: wrap;
+  }
+
+  .accent-color-picker {
+    width: 100%;
+  }
+
+  .masthead-inner {
+    padding: 12px 14px;
+  }
+
+  .wordmark {
+    font-size: 1.2rem;
+  }
+
+  .search-form {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .page {
+    padding: 20px 14px 40px;
+  }
+
+  .news-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .news-card {
+    min-height: 0;
+  }
+
+  .site-footer {
+    padding: 20px 14px 36px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 1.6s;
+  }
+
+  .news-card,
+  .news-card-thumb img,
+  .search-input,
+  .search-submit,
+  .load-more-button {
+    transition: none;
+  }
+
+  .news-card:hover {
+    transform: none;
+  }
+
+  .news-card:hover .news-card-thumb img {
+    transform: none;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}

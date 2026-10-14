@@ -1,0 +1,173 @@
+.news-card-thumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: linear-gradient(145deg, #ecece8 0%, #e2e2de 100%);
+  overflow: hidden;
+}
+
+.no-image-source {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  font-family: var(--font);
+  font-size: clamp(1.1rem, 2vw, 1.45rem);
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  color: var(--color-ink);
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.news-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+
+.news-card:hover .news-card-thumb img {
+  transform: scale(1.03);
+}
+
+.news-card-thumb.no-image img {
+  display: none;
+}
+
+.news-card-thumb .placeholder-icon {
+  display: none;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  color: #b0b0a8;
+}
+
+.news-card-thumb.no-image .placeholder-icon {
+  display: none;
+}
+
+.news-card-body {
+  padding: 14px 15px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  flex: 1;
+  min-height: 0;
+}
+
+.news-card-source {
+  display: block;
+  font-family: var(--font);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--color-accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.news-card-title {
+  font-family: var(--font);
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.015em;
+  color: var(--color-ink);
+  margin: 0;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  transition: color var(--ease);
+}
+
+.news-card-desc {
+  font-family: var(--font);
+  font-size: 0.84rem;
+  font-weight: 400;
+  color: var(--color-muted);
+  line-height: 1.55;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+
+.news-card-footer {
+  margin-top: auto;
+  padding-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--font);
+  font-size: 0.72rem;
+  font-weight: 450;
+  color: #8a8a8a;
+  border-top: 1px solid var(--color-line-soft);
+}
+
+.news-card-host {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 55%;
+}
+
+.news-card-date {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.news-card-link-hint {
+  display: none;
+  /* 카드 전체가 링크이므로 시각적 힌트는 hover 시 제목 색상으로 */
+}
+
+/* ---------- Load more ---------- */
+
+.load-more-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 36px;
+}
+
+.load-more-button {
+  padding: 11px 28px;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-ink-soft);
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+  transition: border-color var(--ease), background var(--ease), color var(--ease),
+    box-shadow var(--ease);
+}
+
+.load-more-button:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent-dark);
+  background: var(--color-accent-soft);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.load-more-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+  box-shadow: none;
+}
+
