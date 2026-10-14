@@ -25,6 +25,7 @@
 
   function create({ resolvePublisherName, formatPublishedAt, getDisplayText }) {
     const panel = document.getElementById("article-preview-panel");
+    const settingsButton = document.getElementById("settings-button");
     const card = panel.querySelector(".article-preview-card");
     const scrollContainer = panel.querySelector(".article-preview-scroll");
     const content = panel.querySelector(".article-preview-content");
@@ -34,6 +35,9 @@
     const title = document.getElementById("article-preview-title");
     const summary = document.getElementById("article-preview-summary");
     const image = document.getElementById("article-preview-image");
+    const imageViewer = document.getElementById("article-image-viewer");
+    const imageViewerImage = document.getElementById("article-image-viewer-image");
+    const imageViewerCloseButton = document.getElementById("article-image-viewer-close");
     const urlWrap = document.getElementById("article-preview-url-wrap");
     const urlText = document.getElementById("article-preview-url");
     const copyButton = document.getElementById("article-preview-copy");
@@ -78,12 +82,30 @@
     function close() {
       if (panel.hidden) return;
 
+      closeImageViewer(false);
       panel.hidden = true;
       resetScrollPosition();
       document.documentElement.classList.remove("article-preview-open");
       document.body.classList.remove("article-preview-open");
+      settingsButton.disabled = false;
       if (trigger) trigger.focus();
       trigger = null;
+    }
+
+    function openImageViewer() {
+      if (image.hidden || !image.src) return;
+
+      imageViewerImage.src = image.currentSrc || image.src;
+      imageViewer.hidden = false;
+      imageViewerCloseButton.focus({ preventScroll: true });
+    }
+
+    function closeImageViewer(restoreFocus = true) {
+      if (imageViewer.hidden) return;
+
+      imageViewer.hidden = true;
+      imageViewerImage.removeAttribute("src");
+      if (restoreFocus && !image.hidden) image.focus({ preventScroll: true });
     }
 
     function open(article, opener, language) {
@@ -140,6 +162,7 @@
 
       trigger = opener;
       panel.hidden = false;
+      settingsButton.disabled = true;
       document.documentElement.classList.add("article-preview-open");
       document.body.classList.add("article-preview-open");
       closeButton.focus({ preventScroll: true });
@@ -150,6 +173,17 @@
     }
 
     closeButton.addEventListener("click", close);
+    image.addEventListener("click", openImageViewer);
+    image.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+
+      event.preventDefault();
+      openImageViewer();
+    });
+    imageViewerCloseButton.addEventListener("click", () => closeImageViewer());
+    imageViewer.addEventListener("click", (event) => {
+      if (event.target === imageViewer) closeImageViewer();
+    });
     window.addEventListener("resize", updateContentLayout);
     copyButton.addEventListener("click", async () => {
       const url = copyButton.dataset.url;
@@ -177,6 +211,16 @@
     });
     document.addEventListener("keydown", (event) => {
       if (panel.hidden) return;
+
+      if (!imageViewer.hidden) {
+        if (event.key === "Escape") {
+          closeImageViewer();
+        } else if (event.key === "Tab") {
+          event.preventDefault();
+          imageViewerCloseButton.focus();
+        }
+        return;
+      }
 
       if (event.key === "Escape") {
         close();
