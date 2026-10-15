@@ -84,6 +84,9 @@
   };
 
   const statusBar = document.getElementById("status-bar");
+  const statusText = document.getElementById("status-text");
+  const articleSortControls = document.getElementById("article-sort-controls");
+  const articleSortButtons = articleSortControls.querySelectorAll(".article-sort-button");
   const newsGrids = {
     ko: document.getElementById("korean-news-grid"),
     en: document.getElementById("english-news-grid"),
@@ -120,6 +123,7 @@
 
   const state = {
     query: "",
+    sort: "relevance",
     isLoading: false,
     languages: {
       ko: { apiOffset: 0, total: 0, totalIsLowerBound: false, displayedCount: 0, isLoadingMore: false, hasMore: false, leftover: [], seenKeys: new Set() },
@@ -593,10 +597,17 @@
 
   function updateStatusBar() {
     if (state.query) {
-      statusBar.textContent = `'${state.query}' 검색 결과`;
+      statusText.textContent = `'${state.query}' 검색 결과`;
     } else {
-      statusBar.textContent = "최신 뉴스";
+      statusText.textContent = "최신 뉴스";
     }
+  }
+
+  function updateArticleSortControls() {
+    articleSortControls.hidden = !state.query;
+    articleSortButtons.forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.sort === state.sort));
+    });
   }
 
   function updateLoadMoreButton(language) {
@@ -621,7 +632,7 @@
 
     if (searchQuery) {
       params.set("q", searchQuery);
-      params.set("sort", trimmed ? "relevance" : "date");
+      params.set("sort", trimmed ? state.sort : "date");
     } else {
       params.set("sort", "date");
     }
@@ -842,6 +853,8 @@
   }
 
   async function loadNews(query) {
+    state.query = query.trim();
+    updateArticleSortControls();
     state.isLoading = true;
     hideAllStates();
     Object.values(newsGrids).forEach((grid) => {
@@ -911,6 +924,16 @@
     searchInput.value = "";
     resetButton.hidden = true;
     triggerSearch("");
+  });
+
+  articleSortButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const selectedSort = button.dataset.sort;
+      if (selectedSort === state.sort || !state.query) return;
+      state.sort = selectedSort;
+      updateArticleSortControls();
+      loadNews(state.query);
+    });
   });
 
   Object.values(retryButtons).forEach((button) => {
