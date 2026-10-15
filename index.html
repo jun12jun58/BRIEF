@@ -139,7 +139,13 @@
   </section>
 
   <main class="page">
-    <p id="status-bar" class="status-bar" role="status" aria-live="polite"></p>
+    <div id="status-bar" class="status-bar" role="status" aria-live="polite">
+      <span id="status-text"></span>
+      <div id="article-sort-controls" class="article-sort-controls" role="group" aria-label="검색 결과 정렬" hidden>
+        <button type="button" class="article-sort-button" data-sort="date" aria-pressed="false">최신순</button>
+        <button type="button" class="article-sort-button" data-sort="relevance" aria-pressed="true">관련도순</button>
+      </div>
+    </div>
 
     <section id="state-empty" class="state-panel" hidden>
       <p id="empty-message">검색 결과가 없습니다.</p>
