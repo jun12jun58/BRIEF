@@ -12,7 +12,7 @@
   // 상수 / 설정
   // -------------------------------------------------------------------
 
-  const API_ENDPOINT = "https://freenewsapi.ai/v1/search";
+  const API_ENDPOINT = "https://brief-api.jun12jun58.workers.dev";
   const NEWS_COUNTRY = "KR";
   const PAGE_SIZE = 15;
   const SEARCH_DEBOUNCE_MS = 500;
